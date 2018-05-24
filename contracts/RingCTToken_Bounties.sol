@@ -4,30 +4,57 @@ import "./Debuggable.sol";
 import "./ECMathInterface.sol";
 import "./RingCTTxVerifyInterface.sol";
 import "./BulletproofVerifyInterface.sol";
-import "./ERC20Interface.sol";
-import "./libSafeMathRevert.sol";
+import "./DaiV1Interface.sol";
 
-contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVerifyInterface {
+/*
+Rinkeby Deploy Addresses:
+"0x4552c90DB760D5380921e18377A41eDCff8D100e",
+"0xa4481352f57715c05B60Bad3dc33650b6ECC45d7",
+"0xd342405B028EfaEdc428e6F46E737Db8bf083081",
+"0xCDee4D43f3a234201C7AdcCD4CfFaB8c808DdC71"
+*/
+
+contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVerifyInterface, DSMath {
 	//Contstructor Function - Initializes Prerequisite Contract(s)
-	constructor(address ecMathAddr, address bpVerifyAddr, address ringCTVerifyAddr)
+	constructor(address ecMathAddr, address bpVerifyAddr, address ringCTVerifyAddr, address daiAddr)
 		ECMathInterface(ecMathAddr) BulletproofVerifyInterface(bpVerifyAddr) RingCTTxVerifyInterface(ringCTVerifyAddr) public
 	{
 	    //Setup interface to Maker DAI token
-	    dai = ERC20Interface(0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359);
+	    if (daiAddr == 0) {
+	        daiAddr = 0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359;
+	    }
+	    
+	    dai = ERC20(daiAddr);
 	}
 	
-	//Constants, note all ether values in this section are valued in DAI
-	uint public constant KC_TIMEOUT_BLOCKS = 40000;     //Blocks before positive balances can be removed from the state
+	function Kill() public ownerOnly {
+	    uint dai_balance = dai.balanceOf(address(this));
+	    
+	    if (dai_balance > 0) {
+	        dai.transfer(msg.sender, dai.balanceOf(address(this)));
+	    }
+	    
+    	selfdestruct(msg.sender);
+	}
+	
+	//Constants
+	//Note: all "ether" values in this section are actually valued in DAI
+	//Known pedersen commitment constants
+	uint public constant KC_TIMEOUT_BLOCKS = 40000;     		//Blocks before positive balances can be removed from the state
 	uint public constant KC_STATECLEAR_BOUNTY = 0.50 ether;
 	
-	//DAI parameters
-	ERC20Interface dai;
+	//DAI Token
+	ERC20 dai;
+	function DAIToken_GetAddress() public view returns (address) {
+	    return address(dai);
+	}
 	
 	//Events
 	event WithdrawalEvent(address indexed _to, uint256 _value);
 	event DepositEvent (uint256 indexed _pub_key, uint256 indexed _dhe_point, uint256 _value);
 	event SendEvent (uint256 indexed _pub_key, uint256 indexed _value, uint256 indexed _dhe_point, uint256[3] _encrypted_data);
-	event PCRangeProvenEvent (uint256 indexed _commitment, uint256 _min, uint256 _max, uint256 _resolution);
+	event PCRangeProvenEvent (uint256 indexed _commitment, uint256 _min, uint256 _max, uint256 _resolution, uint timeout_block);
+	event PCExpiredEvent (uint256 indexed _commitment);
 	event StealthAddressPublishedEvent(address indexed addr, uint256 indexed pubviewkey, uint256 indexed pubspendkey);
 	event StealthAddressPrivateViewKeyPublishedEvent(address indexed addr, uint256 indexed priviewkey);
 
@@ -96,7 +123,7 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
         public requireRingCTTxVerify returns (bool success)
     {
         //Must be able to pay for state clearing bounty
-        if (dai.allowance(msg.sender, this) < KC_STATECLEAR_BOUNTY) return false;
+        if (dai.allowance(msg.sender, address(this)) < KC_STATECLEAR_BOUNTY) return false;
         
 		//Verify Borromean Range Proof
 		success = ringcttxverify.VerifyBorromeanRangeProof(rpSerialized);
@@ -105,26 +132,24 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
 		    //Deserialize arguments
 		    BorromeanRangeProofStruct.Data memory args = BorromeanRangeProofStruct.Deserialize(rpSerialized);
 		    
-			known_commitments[ecMath.CompressPoint(args.total_commit)] = KC_Data(block.number + KC_TIMEOUT_BLOCKS);
+		    uint timeout_block = block.number + KC_TIMEOUT_BLOCKS;
+			known_commitments[ecMath.CompressPoint(args.total_commit)] = KC_Data(timeout_block);
 			
 			uint256[3] memory temp;
 			temp[0] = (args.bit_commits.length / 2);         //Bits
 			temp[1] = (10**args.power10);                    //Resolution
 			temp[2] = (4**temp[0]-1)*temp[1]+args.offset;    //Max Value
-			emit PCRangeProvenEvent(ecMath.CompressPoint(args.total_commit), args.offset, temp[2], temp[1]);
+			emit PCRangeProvenEvent(ecMath.CompressPoint(args.total_commit), args.offset, temp[2], temp[1], timeout_block);
 			
 			//Transfer DAI tokens to cover bounty
-			dai.transferFrom(msg.sender, this, KC_STATECLEAR_BOUNTY);
-		}
-		else {
-		    revert();
+			dai.transferFrom(msg.sender, address(this), KC_STATECLEAR_BOUNTY);
 		}
 	}
 	
 	//Verify Pedersen Commitment is positive using Bullet Proof(s)
 	//Arguments are serialized to minimize stack depth.  See libBulletproofStruct.sol
 	function VerifyPCBulletProof(uint256[] bpSerialized, uint256[] power10, uint256[] offsets)
-		public requireECMath requireBulletproofVerify payable returns (bool success)
+		public requireECMath requireBulletproofVerify returns (bool success)
 	{
 	    //Deserialize Bullet Proof
 	    BulletproofStruct.Data[] memory args = BulletproofStruct.Deserialize(bpSerialized);
@@ -149,7 +174,7 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
     	if (power10.length != offset_index) return false;
     	
         //Must be able to pay for state clearing bounty
-        uint bounty = SafeMath.mul(KC_STATECLEAR_BOUNTY, offsets.length);
+        uint bounty = DSMath.mul(KC_STATECLEAR_BOUNTY, offsets.length);
         if (dai.allowance(msg.sender, this) < bounty) return false;
 		
 		//Limit power10, offsets, and N so that commitments do not overflow (even if "positive")		
@@ -168,6 +193,7 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
 			//Note that multiplying the commitment by a power of 10 also affects the blinding factor as well
 			offset_index = 0;
 			
+			uint timeout_block = block.number + KC_TIMEOUT_BLOCKS;
 			for (p = 0; p < args.length; p++) {
 				for (i = 0; i < args[p].V.length; i += 2) {
 				    //Pull commitment
@@ -185,12 +211,12 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
     				
     				//Mark balance as positive
     				point[0] = ecMath.CompressPoint(point);
-    				known_commitments[point[0]] = KC_Data(block.number + KC_TIMEOUT_BLOCKS);
+    				known_commitments[point[0]] = KC_Data(timeout_block);
     				
     				//Emit event
     				temp[0] = (10**power10[offset_index]);                     //Resolution
     				temp[1] = (2**args[p].N-1)*temp[0]+offsets[offset_index];  //Max Value
-    				emit PCRangeProvenEvent(point[0], offsets[offset_index], temp[1], temp[0]);
+    				emit PCRangeProvenEvent(point[0], offsets[offset_index], temp[1], temp[0], timeout_block);
 					
 					//Increment indices
 					offset_index++;
@@ -198,10 +224,7 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
 			}
 			
 			//Transfer DAI tokens to cover bounty
-			dai.transferFrom(msg.sender, this, bounty);
-		}
-		else {
-		    revert();
+			dai.transferFrom(msg.sender, address(this), bounty);
 		}
 	}
     
@@ -290,7 +313,7 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
 		}
 		
 		//Redeem pedersen commitment bounties
-		msg.sender.transfer(SafeMath.mul(args.output_tx.length, KC_STATECLEAR_BOUNTY));
+		msg.sender.transfer(DSMath.mul(args.output_tx.length, KC_STATECLEAR_BOUNTY));
 		
 		return true;
     }
@@ -306,13 +329,14 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
             if (known_commitments[j].timeout_block < block.number) {
                 //Clear commitment
                 known_commitments[j] = KC_Data(0);
+                emit PCExpiredEvent(j);
                 numCleared++;
             }
         }
         
         //Redeem bounties
         if (numCleared > 0) {
-            dai.transferFrom(this, msg.sender, SafeMath.mul(numCleared, KC_STATECLEAR_BOUNTY));
+            dai.transfer(msg.sender, DSMath.mul(numCleared, KC_STATECLEAR_BOUNTY));
         }
     }
 }

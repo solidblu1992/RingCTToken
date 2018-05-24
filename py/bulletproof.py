@@ -582,8 +582,8 @@ class BulletProof:
 
 #Single Bullet Proofs
 if (True):
-    N = 32   #bits
-    m = 2    #commitments per proof
+    N = 8   #bits
+    m = 4   #commitments per proof
     print()
     print("Generating Single Bullet Proof with " + str(m) + " commitment(s) of " + str(N) + " bits...")
 
@@ -603,7 +603,7 @@ if (True):
     print("Verify time: " + str(t / m) + "s")
 
 #Multiple Bullet Proofs
-if (True):
+if (False):
     p = 2 #Number of Proofs
     m = 2 #Commitments per Proof
     bits = 32
