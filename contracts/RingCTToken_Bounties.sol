@@ -4,6 +4,7 @@ import "./Debuggable.sol";
 import "./ECMathInterface.sol";
 import "./RingCTTxVerifyInterface.sol";
 import "./BulletproofVerifyInterface.sol";
+import "./ERC20Interface.sol";
 import "./libSafeMathRevert.sol";
 
 contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVerifyInterface {
@@ -11,12 +12,16 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
 	constructor(address ecMathAddr, address bpVerifyAddr, address ringCTVerifyAddr)
 		ECMathInterface(ecMathAddr) BulletproofVerifyInterface(bpVerifyAddr) RingCTTxVerifyInterface(ringCTVerifyAddr) public
 	{
-		//Nothing left to do
+	    //Setup interface to Maker DAI token
+	    dai = ERC20Interface(0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359);
 	}
 	
-	//Constants
-	uint public constant KC_TIMEOUT_BLOCKS = 40000; //Blocks before positive balances can be removed from the state
-	uint public constant KC_STATECLEAR_BOUNTY = 0.0001 ether;
+	//Constants, note all ether values in this section are valued in DAI
+	uint public constant KC_TIMEOUT_BLOCKS = 40000;     //Blocks before positive balances can be removed from the state
+	uint public constant KC_STATECLEAR_BOUNTY = 0.50 ether;
+	
+	//DAI parameters
+	ERC20Interface dai;
 	
 	//Events
 	event WithdrawalEvent(address indexed _to, uint256 _value);
@@ -88,10 +93,10 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
 	//Verify Pedersen Commitment is positive using a Borromean Range Proof
     //Arguments are serialized to minimize stack depth.  See libBorromeanRangeProofStruct.sol
     function VerifyPCBorromeanRangeProof(uint256[] rpSerialized)
-        public requireRingCTTxVerify payable returns (bool success)
+        public requireRingCTTxVerify returns (bool success)
     {
         //Must be able to pay for state clearing bounty
-        require(msg.value >= KC_STATECLEAR_BOUNTY);
+        if (dai.allowance(msg.sender, this) < KC_STATECLEAR_BOUNTY) return false;
         
 		//Verify Borromean Range Proof
 		success = ringcttxverify.VerifyBorromeanRangeProof(rpSerialized);
@@ -108,10 +113,8 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
 			temp[2] = (4**temp[0]-1)*temp[1]+args.offset;    //Max Value
 			emit PCRangeProvenEvent(ecMath.CompressPoint(args.total_commit), args.offset, temp[2], temp[1]);
 			
-			//Refund any unused bounty
-			if (msg.value > KC_STATECLEAR_BOUNTY) {
-			    msg.sender.transfer(msg.value - KC_STATECLEAR_BOUNTY);
-			}
+			//Transfer DAI tokens to cover bounty
+			dai.transferFrom(msg.sender, this, KC_STATECLEAR_BOUNTY);
 		}
 		else {
 		    revert();
@@ -147,7 +150,7 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
     	
         //Must be able to pay for state clearing bounty
         uint bounty = SafeMath.mul(KC_STATECLEAR_BOUNTY, offsets.length);
-        require(msg.value >= bounty);
+        if (dai.allowance(msg.sender, this) < bounty) return false;
 		
 		//Limit power10, offsets, and N so that commitments do not overflow (even if "positive")		
 		for (i = 0; i < offsets.length; i++) {
@@ -194,10 +197,8 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
 				}
 			}
 			
-			//Refund any unused bounty
-			if (msg.value > bounty) {
-			    msg.sender.transfer(msg.value - bounty);
-			}
+			//Transfer DAI tokens to cover bounty
+			dai.transferFrom(msg.sender, this, bounty);
 		}
 		else {
 		    revert();
@@ -311,7 +312,7 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
         
         //Redeem bounties
         if (numCleared > 0) {
-            msg.sender.transfer(SafeMath.mul(numCleared, KC_STATECLEAR_BOUNTY));
+            dai.transferFrom(this, msg.sender, SafeMath.mul(numCleared, KC_STATECLEAR_BOUNTY));
         }
     }
 }
