@@ -1,0 +1,529 @@
+[
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"name": "marker",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"name": "data",
+				"type": "uint256[]"
+			}
+		],
+		"name": "DebugEvent2",
+		"type": "event"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "bpVerifyAddr",
+				"type": "address"
+			}
+		],
+		"name": "BulletproofVerify_ChangeAddress",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "dest_pub_keys",
+				"type": "uint256[]"
+			},
+			{
+				"name": "dhe_points",
+				"type": "uint256[]"
+			},
+			{
+				"name": "values",
+				"type": "uint256[]"
+			}
+		],
+		"name": "Deposit",
+		"outputs": [],
+		"payable": true,
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "ecMathAddr",
+				"type": "address"
+			}
+		],
+		"name": "ECMath_ChangeAddress",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [],
+		"name": "Kill",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "stx_priviewkey",
+				"type": "uint256"
+			}
+		],
+		"name": "PublishPrivateViewKey",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "stx_pubviewkey",
+				"type": "uint256"
+			},
+			{
+				"name": "stx_pubspendkey",
+				"type": "uint256"
+			}
+		],
+		"name": "PublishStealthAddress",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "ringCTTxVerifyAddr",
+				"type": "address"
+			}
+		],
+		"name": "RingCTTxVerify_ChangeAddress",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "argsSerialized",
+				"type": "uint256[]"
+			}
+		],
+		"name": "Send",
+		"outputs": [
+			{
+				"name": "success",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"name": "pubviewkey",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"name": "pubspendkey",
+				"type": "uint256"
+			}
+		],
+		"name": "StealthAddressPublishedEvent",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"name": "_name",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"name": "_new",
+				"type": "address"
+			}
+		],
+		"name": "ContractAddressChanged",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"name": "marker",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"name": "data",
+				"type": "uint256"
+			}
+		],
+		"name": "DebugEvent",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"name": "_commitment",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"name": "_min",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"name": "_max",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"name": "_resolution",
+				"type": "uint256"
+			}
+		],
+		"name": "PCRangeProvenEvent",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"name": "_pub_key",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"name": "_value",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"name": "_dhe_point",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"name": "_encrypted_data",
+				"type": "uint256[3]"
+			}
+		],
+		"name": "SendEvent",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"name": "_pub_key",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"name": "_dhe_point",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"name": "_value",
+				"type": "uint256"
+			}
+		],
+		"name": "DepositEvent",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"name": "_to",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"name": "_value",
+				"type": "uint256"
+			}
+		],
+		"name": "WithdrawalEvent",
+		"type": "event"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "rpSerialized",
+				"type": "uint256[]"
+			}
+		],
+		"name": "VerifyPCBorromeanRangeProof",
+		"outputs": [
+			{
+				"name": "success",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"name": "priviewkey",
+				"type": "uint256"
+			}
+		],
+		"name": "StealthAddressPrivateViewKeyPublishedEvent",
+		"type": "event"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "bpSerialized",
+				"type": "uint256[]"
+			},
+			{
+				"name": "power10",
+				"type": "uint256[]"
+			},
+			{
+				"name": "offsets",
+				"type": "uint256[]"
+			}
+		],
+		"name": "VerifyPCBulletProof",
+		"outputs": [
+			{
+				"name": "success",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"name": "ecMathAddr",
+				"type": "address"
+			},
+			{
+				"name": "bpVerifyAddr",
+				"type": "address"
+			},
+			{
+				"name": "ringCTVerifyAddr",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "balance_positive",
+		"outputs": [
+			{
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "BulletproofVerify_GetAddress",
+		"outputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "BulletproofVerify_GetCodeSize",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "ECMath_GetAddress",
+		"outputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "ECMath_GetCodeSize",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "key_images",
+		"outputs": [
+			{
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "RingCTTxVerify_GetAddress",
+		"outputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "RingCTTxVerify_GetCodeSize",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "token_committed_balance",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	}
+]
