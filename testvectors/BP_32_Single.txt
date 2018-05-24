@@ -1,9 +1,4 @@
-Python 3.5.2 (default, Nov 23 2017, 16:37:01) 
-[GCC 5.4.0 20160609] on linux
-Type "copyright", "credits" or "license()" for more information.
->>> 
-========= RESTART: /media/sf_ethereum/RingCTToken/py/bulletproof.py =========
-Generating Single Bullet Proof(s)...
+Generating Single Bullet Proof with 1 commitment(s) of 32 bits...
 Bullet Proof:
 argsSerialized:
 1,2,
@@ -46,7 +41,7 @@ argsSerialized:
 32
 
 power10:
-17
+0
 
 offset:
 0
