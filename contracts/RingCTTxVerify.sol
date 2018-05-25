@@ -24,10 +24,13 @@ contract RingCTTxVerify is ECMathInterface, MLSAGVerifyInterface {
         uint256[2] keyImage;    //Expanded EC Point representing key image
     }
 	
-    //Constructs full MLSAG for Ring CT Transaction and Verifes
-	function ValidateRingCTTx(RingCTTxStruct.Data args)
-		internal view requireECMath requireMLSAGVerify returns (bool)
+    //Constructs full MLSAG for Ring CT Transaction and Verifies
+	function ValidateRingCTTx(uint256[] argsSerialized)
+		public view requireECMath requireMLSAGVerify returns (bool)
 	{
+		//Deserialize arguments
+		RingCTTxStruct.Data args = RingCTTxStruct.Deserialize(argsSerialized);
+	
 		//Need at least one destination
         if (args.output_tx.length == 0) return false;
         
@@ -100,26 +103,20 @@ contract RingCTTxVerify is ECMathInterface, MLSAGVerifyInterface {
         
 		return true;
 	}
-	
-	//Serialized version of ValidateRingCTTx.  This version does not use structs so that it can be called publicly.
-	function ValidateRingCTTx(uint256[] argsSerialized)
-	    public view returns (bool)
-	{	    
-	    return ValidateRingCTTx(RingCTTxStruct.Deserialize(argsSerialized));
-	}
-	
+
     //Verifies range proof for given commitment.  Returns if commitment is proven to be positive
-    function VerifyBorromeanRangeProof(BorromeanRangeProofStruct.Data args)
-        internal view requireECMath requireMLSAGVerify returns (bool success)
+    function VerifyBorromeanRangeProof(uint256[] argsSerialized)
+        public view requireECMath requireMLSAGVerify returns (bool success)
     {
+		//Deserialize arguments
+		BorromeanRangeProofStruct.Data args = BorromeanRangeProofStruct.Deserialize(argsSerialized);
+	
         //Get number of bits to prove
-        if(args.bit_commits.length % 2 != 0) return false;
+        if (args.bit_commits.length % 2 != 0) return false;
         uint256 bits = (args.bit_commits.length / 2);
         if (bits == 0) return false;
         
         //Impose limits on inputs in order to avoid values greater than Ncurve // 2
-        if (args.power10 > 35) return false;
-        if (args.offset > (ecMath.GetNCurve() / 4)) return false;
         if (bits > 64) return false;
         
         //Check for proper signature size
@@ -133,10 +130,6 @@ contract RingCTTxVerify is ECMathInterface, MLSAGVerifyInterface {
             temp1 = ecMath.Add(temp1, [args.bit_commits[2*i], args.bit_commits[2*i+1]]);
         }
 		
-		if (args.offset > 0) {
-			temp1 = ecMath.AddMultiplyH(temp1, args.offset);
-        }
-		
         if ( (args.total_commit[0] != temp1[0]) || (args.total_commit[1] != temp1[1]) ) return false;
         
         //Build Public Keys for Signature Verification
@@ -147,19 +140,19 @@ contract RingCTTxVerify is ECMathInterface, MLSAGVerifyInterface {
             temp1 = [args.bit_commits[2*i], args.bit_commits[2*i+1]];
             (P[2*i], P[2*i+1]) = (temp1[0], temp1[1]);
             
-            //Calculate -(4**bit)*(10**power10)*H
-            temp2 = ecMath.MultiplyH((4**i)*(10**args.power10));
+            //Calculate -(4**bit)*H
+            temp2 = ecMath.MultiplyH(4**i);
             temp2 = ecMath.Negate(temp2);
             
-            //Calculate 1st counter commitment: C' = C - (4**bit)*(10**power10)*H
+            //Calculate 1st counter commitment: C' = C - (4**bit)*H
             temp1 = ecMath.Add(temp1, temp2);
             (P[2*(i+bits)], P[2*(i+bits)+1]) = (temp1[0], temp1[1]);
             
-            //Calculate 2nd counter commitment: C'' = C - 2*(4**bit)*(10**power10)*H
+            //Calculate 2nd counter commitment: C'' = C - 2*(4**bit)*H
             temp1 = ecMath.Add(temp1, temp2);
             (P[2*(i+2*bits)], P[2*(i+2*bits)+1]) = (temp1[0], temp1[1]);
             
-            //Calculate 3rd counter commitment: C''' = C - 3*(4**bit)*(10**power10)*H
+            //Calculate 3rd counter commitment: C''' = C - 3*(4**bit)*H
             temp1 = ecMath.Add(temp1, temp2);
             (P[2*(i+3*bits)], P[2*(i+3*bits)+1]) = (temp1[0], temp1[1]);
         }
@@ -167,13 +160,6 @@ contract RingCTTxVerify is ECMathInterface, MLSAGVerifyInterface {
         //Verify Signature
         success = mlsagVerify.VerifyMSAG(bits, ecMath.CompressPoint(args.total_commit), P, args.signature);
     }
-    
-    //Serialized version of VerifyBorromeanRangeProof.  This version does not use structs so that it can be called publicly.
-	function VerifyBorromeanRangeProof(uint256[] argsSerialized)
-	    public view returns (bool)
-	{	    
-	    return VerifyBorromeanRangeProof(BorromeanRangeProofStruct.Deserialize(argsSerialized));
-	}
     
     //Utility Functions
     function HashSendMsg(UTXO.Output[] output_tx)

@@ -81,9 +81,13 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
 	
 	//Verify Pedersen Commitment is positive using a Borromean Range Proof
     //Arguments are serialized to minimize stack depth.  See libBorromeanRangeProofStruct.sol
-    function VerifyPCBorromeanRangeProof(uint256[] rpSerialized)
+    function VerifyPCBorromeanRangeProof(uint256[] rpSerialized, uint64 power10, uint64 offset)
         public requireRingCTTxVerify returns (bool success)
     {
+		//Limit power10 and offset
+		if (power10 > 35) return false;
+		if (offset > (ecMath.GetNCurve() / 4)) return false;
+		
 		//Verify Borromean Range Proof
 		success = ringcttxverify.VerifyBorromeanRangeProof(rpSerialized);
 		
@@ -91,13 +95,23 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
 		    //Deserialize arguments
 		    BorromeanRangeProofStruct.Data memory args = BorromeanRangeProofStruct.Deserialize(rpSerialized);
 		    
+			//Calculate (10^power10)*V = (10^power10)*(v*H + bf*G1) = v*(10^power10)*H + bf*(10^power10)*G1
+			if (power10 != 0) {
+				args.total_commit = ecMath.Multiply(args.total_commit, 10**power10);
+			}
+		
+			//Calculate V + offset*H = v*H + bf*G1 + offset*H = (v + offset)*H + bf*G1
+			if (offset != 0) {
+				args.total_commit = ecMath.AddMultiplyH(args.total_commit, offset);
+			}
+			
 			balance_positive[ecMath.CompressPoint(args.total_commit)] = true;
 			
 			uint256[3] memory temp;
-			temp[0] = (args.bit_commits.length / 2);         //Bits
-			temp[1] = (10**args.power10);                    //Resolution
-			temp[2] = (4**temp[0]-1)*temp[1]+args.offset;    //Max Value
-			emit PCRangeProvenEvent(ecMath.CompressPoint(args.total_commit), args.offset, temp[2], temp[1]);
+			temp[0] = (args.bit_commits.length / 2);    //Bits
+			temp[1] = (10**power10);                    //Resolution
+			temp[2] = (4**temp[0]-1)*temp[1]+offset;    //Max Value
+			emit PCRangeProvenEvent(ecMath.CompressPoint(args.total_commit), offset, temp[2], temp[1]);
 		}
 	}
 	
