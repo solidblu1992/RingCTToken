@@ -493,16 +493,20 @@ class BulletProof:
     def Print_MEW(self):
         print("Bullet Proof:")
         print("argsSerialized:")
-        print(str(1) + "," + str(len(self.V*2)) + ",")
-        print(str(len(self.L*2)) + "," + str(len(self.R*2)) + ",")
+        print(str(1) + ",")
+        combined = self.N & 0xFFFFFFFFFFFFFFFF
+        combined |= (len(self.V)*2 & 0xFFFFFFFFFFFFFFFF) << 64
+        combined |= (len(self.L)*2 & 0xFFFFFFFFFFFFFFFF) << 128
+        combined |= (len(self.R)*2 & 0xFFFFFFFFFFFFFFFF) << 192
+        print(bytes_to_str(combined) + ",")
         for i in range(0, len(self.V)):
             print(point_to_str(self.V[i]) + ",")
         print(point_to_str(self.A) + ",")
         print(point_to_str(self.S) + ",")
         print(point_to_str(self.T1) + ",")
         print(point_to_str(self.T2) + ",")
-        print(hex(self.taux) + ",")
-        print(hex(self.mu) + ",")
+        print(bytes_to_str(self.taux) + ",")
+        print(bytes_to_str(self.mu) + ",")
 
         for i in range(0, len(self.L)):
             print(point_to_str(self.L[i]) + ",")
@@ -510,10 +514,9 @@ class BulletProof:
         for i in range(0, len(self.R)):
             print(point_to_str(self.R[i]) + ",")
 
-        print(hex(self.a) + ",")
-        print(hex(self.b) + ",")
-        print(hex(self.t) + ",")
-        print(str(self.N))
+        print(bytes_to_str(self.a) + ",")
+        print(bytes_to_str(self.b) + ",")
+        print(bytes_to_str(self.t))
 
         print()
         print("power10:")
@@ -541,17 +544,20 @@ class BulletProof:
         for i in range(0, len(proofs)):
             if (i > 0):
                 print(",")
-                
-            print(str(len(proofs[i].V*2)) + ",")
-            print(str(len(proofs[i].L*2)) + "," + str(len(proofs[i].R*2)) + ",")
+
+            combined = proofs[i].N & 0xFFFFFFFFFFFFFFFF
+            combined |= (len(proofs[i].V)*2 & 0xFFFFFFFFFFFFFFFF) << 64
+            combined |= (len(proofs[i].L)*2 & 0xFFFFFFFFFFFFFFFF) << 128
+            combined |= (len(proofs[i].R)*2 & 0xFFFFFFFFFFFFFFFF) << 192
+            print(bytes_to_str(combined) + ",")
             for j in range(0, len(proofs[i].V)):
                 print(point_to_str(proofs[i].V[j]) + ",")
             print(point_to_str(proofs[i].A) + ",")
             print(point_to_str(proofs[i].S) + ",")
             print(point_to_str(proofs[i].T1) + ",")
             print(point_to_str(proofs[i].T2) + ",")
-            print(hex(proofs[i].taux) + ",")
-            print(hex(proofs[i].mu) + ",")
+            print(bytes_to_str(proofs[i].taux) + ",")
+            print(bytes_to_str(proofs[i].mu) + ",")
 
             for j in range(0, len(proofs[i].L)):
                 print(point_to_str(proofs[i].L[j]) + ",")
@@ -559,12 +565,11 @@ class BulletProof:
             for j in range(0, len(proofs[i].R)):
                 print(point_to_str(proofs[i].R[j]) + ",")
 
-            print(hex(proofs[i].a) + ",")
-            print(hex(proofs[i].b) + ",")
-            print(hex(proofs[i].t) + ",")
-            print(str(proofs[i].N))
+            print(bytes_to_str(proofs[i].a) + ",")
+            print(bytes_to_str(proofs[i].b) + ",")
+            print(bytes_to_str(proofs[i].t), end="")
 
-        print()
+        print("\n")
         print("power10:")
         for i in range(0, len(proofs)):
             for j in range(0, len(proofs[i].power10)):
@@ -582,7 +587,7 @@ class BulletProof:
 
 #Single Bullet Proofs
 if (True):
-    N = 8   #bits
+    N = 8  #bits
     m = 4   #commitments per proof
     print()
     print("Generating Single Bullet Proof with " + str(m) + " commitment(s) of " + str(N) + " bits...")
@@ -590,10 +595,11 @@ if (True):
     #Generate proof(s)
     import time
     t = time.time()
-    bp = BulletProof.Generate([0]*m, [0]*m, [0]*m, getRandom(m), N)
+    bp = BulletProof.Generate([4]*m, [0]*m, [0]*m, getRandom(m), N)
     t = time.time() - t
     bp.Print_MEW()
-    print()
+    
+    print("\n")
     print("Generate time: " + str(t / m) + "s")
 
     #Verify proofs(s)
@@ -604,9 +610,9 @@ if (True):
 
 #Multiple Bullet Proofs
 if (False):
-    p = 2 #Number of Proofs
-    m = 2 #Commitments per Proof
-    bits = 32
+    p = 2   #Number of Proofs
+    m = 2   #Commitments per Proof
+    bits = 8
     bp = [None]*p
 
     print()
@@ -619,7 +625,7 @@ if (False):
         bp[i] = BulletProof.Generate([5]*m, [17]*m, [0]*m, N=bits)
     t = time.time() - t
     BulletProof.PrintMultiMEW(bp)
-    print()
+    print("\n")
     print("Generation time: " + str(t) + "s (" + str(t / (p * m)) + "s per commitment)")
 
     #Verify proofs(s)

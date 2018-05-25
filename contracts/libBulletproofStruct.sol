@@ -1,4 +1,4 @@
-pragma solidity ^0.4.22;
+pragma solidity ^0.4.24;
 
 library BulletproofStruct {
 	//Structure for VerifyBulletproof() arguments
@@ -37,22 +37,25 @@ library BulletproofStruct {
 		
 		index = 1;
 		for (proof = 0; proof < args.length; proof++) {
+			//Retreive N
+			args[proof].N = (argsSerialized[index] & 0xFFFFFFFFFFFFFFFF);
+		
 		    //Initialize V, L, and R arrays
-		    length = argsSerialized[index];
+		    length = (argsSerialized[index] & (0xFFFFFFFFFFFFFFFF << 64)) >> 64;
 		    if (length > 0) args[proof].V = new uint256[](length);
 		    
-            length = argsSerialized[index+1];
+            length = (argsSerialized[index] & (0xFFFFFFFFFFFFFFFF << 128)) >> 128;
     		if (length > 0) args[proof].L = new uint256[](length);
     		
-    		length = argsSerialized[index+2];
+    		length = (argsSerialized[index] & (0xFFFFFFFFFFFFFFFF << 192)) >> 192;
     		if (length > 0) args[proof].R = new uint256[](length);
     		
     		//Check array length again
-    		require(argsSerialized.length >= (index + 17 +
+    		require(argsSerialized.length >= (index + 14 +
     		                                    args[proof].V.length +
     		                                    args[proof].L.length +
     		                                    args[proof].R.length));
-    		index += 3;
+    		index += 1;
 		    
 		    //Get V array
 		    length = args[proof].V.length;
@@ -86,8 +89,7 @@ library BulletproofStruct {
     		args[proof].a = argsSerialized[index];
     		args[proof].b = argsSerialized[index+1];
     		args[proof].t = argsSerialized[index+2];
-    		args[proof].N = argsSerialized[index+3];
-    		index += 4;
+    		index += 3;
 		}
 	}
 	
@@ -99,7 +101,7 @@ library BulletproofStruct {
 	    uint256 proof;
 	    uint256 length = 1;
 	    for (proof = 0; proof < args.length; proof++) {
-	        length += 17 + args[proof].V.length + args[proof].L.length + args[proof].R.length;
+	        length += 14 + args[proof].V.length + args[proof].L.length + args[proof].R.length;
 	    }
 		argsSerialized = new uint256[](length);
 		
@@ -110,11 +112,12 @@ library BulletproofStruct {
 		uint256 i;
 	    uint256 index = 1;
 		for (proof = 0; proof < args.length; proof++) {
-		    //Store V, L, and R sizes
-		    argsSerialized[index] = args[proof].V.length;
-		    argsSerialized[index+1] = args[proof].L.length;
-		    argsSerialized[index+2] = args[proof].R.length;
-		    index += 3;
+		    //Store V, L, and R sizes as well as N
+			argsSerialized[index] = (args[proof].N & 0xFFFFFFFFFFFFFFFF);
+		    argsSerialized[index] |= (args[proof].V.length & 0xFFFFFFFFFFFFFFFF) << 64;
+		    argsSerialized[index] |= (args[proof].L.length & 0xFFFFFFFFFFFFFFFF) << 128;
+		    argsSerialized[index] |= (args[proof].R.length & 0xFFFFFFFFFFFFFFFF) << 192;
+		    index += 1;
 		    
 		    //Store V[]
 		    length = args[proof].V.length;
@@ -154,8 +157,7 @@ library BulletproofStruct {
 		    argsSerialized[index] = args[proof].a;
 		    argsSerialized[index+1] = args[proof].b;
 		    argsSerialized[index+2] = args[proof].t;
-		    argsSerialized[index+3] = args[proof].N;
-		    index += 4;
+		    index += 3;
 		}
 	}
 	

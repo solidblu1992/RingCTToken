@@ -1,13 +1,18 @@
 from ring_signatures import *
 
 class PCRangeProof:
-    pow10 = 0
+    total_commit = NullPoint
+    power10 = 0
     offset = 0
+    value = 0
+    bf = 0
     range_proof = 0
     
-    def __init__(self, pow10, offset, range_proof):
-        self.pow10 = pow10
+    def __init__(self, total_commit, power10, offset, value, bf, range_proof):
+        self.total_commit = total_commit
+        self.power10 = power10
         self.offset = offset
+        self.value = value
         self.range_proof = range_proof
 
     def GetTotalCommitment(self):
@@ -22,23 +27,21 @@ class PCRangeProof:
             bits = 0
             i = 0
             while(bits < target_bits):
-                pow10 = math.floor(math.log(total_value,10)) - i
-                val = total_value // 10**pow10
+                power10 = math.floor(math.log(total_value,10)) - i
+                val = total_value // 10**power10
                 bits = math.floor(math.log(val,4))+1
                 i = i + 1
                 
-            rem = total_value - ( (val) * (10**pow10))
+            rem = total_value - ( (val) * (10**power10))
             
-            return (val, pow10, rem, bits)
+            return (val, power10, rem, bits)
 
     def Commit(value, blinding_factor):
-        point = multiply(G1, blinding_factor)
-        temp = multiply(H, value)
-        point = add(point, temp)
+        point = shamir([G1, H], [blinding_factor, value])
             
         return point
 
-    def Generate(value, pow10, offset, bits_override, total_blinding_factor):
+    def Generate(value, power10, offset, bits_override, total_blinding_factor):
         #Figure out how many bits value is in base 4
         import math
 
@@ -71,8 +74,8 @@ class PCRangeProof:
             indices = indices + [v]
                 
                 
-            p1 = PCRangeProof.Commit(v * (4**i) * (10**pow10), bf)
-            p2 = neg(multiply(H, (4**i)*(10**pow10)))
+            p1 = PCRangeProof.Commit(v * (4**i), bf)
+            p2 = neg(multiply(H, 4**i))
             
             c = c + [p1]            
             p1 = add(p1, p2)
@@ -84,8 +87,19 @@ class PCRangeProof:
 
 
         commitments = c + cp + cpp + cppp
-        total_commitment = PCRangeProof.Commit(value*(10**pow10)+offset, total_blinding_factor)
-        return PCRangeProof(pow10, offset, MSAG.Sign_GenRandom(bits, int_to_bytes32(CompressPoint(total_commitment)), keys, indices, commitments))
+        total_commit = PCRangeProof.Commit(value, total_blinding_factor)
+        range_proof = MSAG.Sign_GenRandom(bits, int_to_bytes32(CompressPoint(total_commit)), keys, indices, commitments)
+
+        if (power10 > 0):
+            total_commit = multiply(total_commit, 10**power10)
+            total_blinding_factor = (total_blinding_factor * (10**power10)) % Ncurve
+            value = value * (10**power10)
+
+        if (offset > 0):
+            total_commit = add(total_commit, multiply(H, offset))
+            value = value + offset
+            
+        return PCRangeProof(total_commit, power10, offset, value, bf, range_proof)
             
 
     def Verify(self):
@@ -94,7 +108,7 @@ class PCRangeProof:
         L = L // 4
         
         #Check that bitwise commitments add up
-        point = multiply(H, self.offset)
+        point = NullPoint
         for i in range(0, L):
             point = add(point, self.range_proof.pub_keys[i])
         
@@ -103,7 +117,7 @@ class PCRangeProof:
         #Check that counter commitments are OK
         for i in range(0, L):
             point = self.range_proof.pub_keys[i]
-            subtract = neg(multiply(H, (4**i)*(10**self.pow10)))
+            subtract = neg(multiply(H, 4**i))
 
             for j in range(1, 4):
                 point = add(point, subtract)
@@ -115,7 +129,7 @@ class PCRangeProof:
         L = len(self.range_proof.pub_keys) // 4
         
         print("Committed Value = " + hex(CompressPoint(self.GetTotalCommitment())))
-        print("Possible Range = " + str(self.offset) + " to " + str((4**L-1)*(10**self.pow10)+self.offset))
+        print("Possible Range = " + str(self.offset) + " to " + str((4**L-1)*(10**self.power10)+self.offset))
         print("Possible # of Values = " + str(4**L-1))
         print("Range Proof:")
         self.range_proof.Print()
@@ -130,9 +144,10 @@ class PCRangeProof:
         print("Borromean Range Proof MEW Representation - for use with VerifyBorromeanRangeProof():")
         print("argsSerialized:")
         print(point_to_str(commitment) + ",")
-        print(str(self.pow10) + ", " + str(self.offset) + ", ", end = "")
-        print(str(L) + ", ", end = "")
-        print(str(len(self.range_proof.signature)) + ",")
+
+        combined = L & 0xFFFFFFFFFFFFFFFF
+        combined |= (len(self.range_proof.signature) & 0xFFFFFFFFFFFFFFFF) << 64
+        print(bytes_to_str(combined) + ",")
 
         for i in range(0, L // 2):
             print(point_to_str(self.range_proof.pub_keys[i]) + ",")
@@ -141,9 +156,15 @@ class PCRangeProof:
             if (i > 0):
                 print(",")
                 
-            print(hex(self.range_proof.signature[i]), end="")
+            print(bytes_to_str(self.range_proof.signature[i]), end="")
+
+        print("\n")
+        print("power10:")
+        print(str(self.power10))
 
         print()
+        print("offset:")
+        print(str(self.offset))
         
 class PCAESMessage:
     message = b""
@@ -193,7 +214,7 @@ class PCAESMessage:
         print("Encrypted Message: " + bytes32_to_str(bytes_to_int(self.message[:32])) + bytes32_to_str(bytes_to_int(self.message[32:]))[30:])
         print("iv: " + bytes16_to_str(bytes_to_int(self.iv)))
 
-def RangeProofTest(value=48, pow10=18, bits=0, offset=1000000,bf=getRandom()):    
+def RangeProofTest(value=48, pow10=18, bits=0, offset=1000000, bf=getRandom()):    
     print("Generating a min " + str(bits) + "-bit Range Proof for " + str(value) + "x(10**" + str(pow10) + ")+" + str(offset) + " = " + str(value*(10**pow10)+offset))
     print("Blinding factor = " + hex(bf))
     rp = PCRangeProof.Generate(value, pow10, offset, bits, getRandom())
@@ -206,6 +227,7 @@ def RangeProofTest(value=48, pow10=18, bits=0, offset=1000000,bf=getRandom()):
         print("Failure!")
 
     rp.Print_MEW()
+    return rp
 
 def AESTest(value=48, pow10=18, offset=1000000,bf=getRandom()):
     v = value*(10**pow10)+offset

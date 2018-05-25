@@ -7,7 +7,7 @@ def print_pub_keys(x, m, a, n):
     for i in range(0, m-a):
         for j in range(0, n):
             if(not eq(x[j*m+i], NullPoint)):
-                print(print_point(CompressPoint(x[j*m+i])))
+                print(bytes_to_str(CompressPoint(x[j*m+i])))
             else:
                 print("0x0")
 
@@ -313,11 +313,12 @@ class RingCT:
         m = len(self.mlsag.key_images)
         assert(len(self.mlsag.pub_keys) % m == 0)
         n = len(self.mlsag.pub_keys) // m
-        
-        print(str(n*(m-1)) + ", ", end="")
-        print(str(len(self.output_transactions)) + ", ", end="")
-        print(str(len(self.mlsag.key_images)*2) + ", ", end="")
-        print(str(len(self.mlsag.signature)) + ",")
+
+        combined = (n*(m-1)) & 0xFFFFFFFFFFFFFFFF
+        combined |= (len(self.output_transactions) & 0xFFFFFFFFFFFFFFFF) << 64
+        combined |= ((len(self.mlsag.key_images)*2) & 0xFFFFFFFFFFFFFFFF) << 128
+        combined |= (len(self.mlsag.signature) & 0xFFFFFFFFFFFFFFFF) << 192
+        print(bytes_to_str(combined) + ",")
 
         #Print input utxos (public key only, committed values will be supplied by the contract)
         for j in range(0, n):
@@ -342,6 +343,8 @@ class RingCT:
             if (i > 0):
                 print(",")
             print(bytes_to_str(self.mlsag.signature[i]), end="")
+
+        print()
 
 def RingCTTest(input_count = 2, mixin_count = 3, outputs = 2, rngSeed=0):
     import random
@@ -394,8 +397,8 @@ def RingCTTest(input_count = 2, mixin_count = 3, outputs = 2, rngSeed=0):
         else:
             print("Mixin TX " + str(i - input_count) + ":")
             
-        print("Pub Key:\t" + print_point(CompressPoint(stealth_tx[i].pub_key)))
-        print("DHE Point:\t" + print_point(CompressPoint(stealth_tx[i].dhe_point)))
+        print("Pub Key:\t" + bytes_to_str(CompressPoint(stealth_tx[i].pub_key)))
+        print("DHE Point:\t" + bytes_to_str(CompressPoint(stealth_tx[i].dhe_point)))
         print("Value:\t\t" + str(xk_v[i] / (10**18)) + " ETH (" + str(xk_v[i]) + " wei)")
         print("BF:\t\t" + hex(xk_bf[i]))
 
@@ -434,8 +437,8 @@ def RingCTTest(input_count = 2, mixin_count = 3, outputs = 2, rngSeed=0):
         bf_total = (bf_total + bf) % Ncurve
             
         print("Output TX " + str(i) + ":")
-        print("Pub Key:\t" + print_point(CompressPoint(stealth_tx_out[i].pub_key)))
-        print("DHE Point:\t" + print_point(CompressPoint(stealth_tx_out[i].dhe_point)))
+        print("Pub Key:\t" + bytes_to_str(CompressPoint(stealth_tx_out[i].pub_key)))
+        print("DHE Point:\t" + bytes_to_str(CompressPoint(stealth_tx_out[i].dhe_point)))
         print("Value:\t\t" + str(v / 10**18) + " ETH (" + str(v) + " wei)")
         print("BF:\t\t" + hex(bf))
         print()
@@ -469,14 +472,14 @@ def RingCTTest(input_count = 2, mixin_count = 3, outputs = 2, rngSeed=0):
     for i in range(0, len(stealth_tx)):
         if i > 0:
             print(",")
-        print(print_point(CompressPoint(stealth_tx[i].pub_key)),end="")
+        print(bytes_to_str(CompressPoint(stealth_tx[i].pub_key)),end="")
     print("\n")
 
     print("dhe_points:")
     for i in range(0, len(stealth_tx)):
         if i > 0:
             print(",")
-        print(print_point(CompressPoint(stealth_tx[i].dhe_point)),end="")
+        print(bytes_to_str(CompressPoint(stealth_tx[i].dhe_point)),end="")
     print("\n")
 
     print("values:")
@@ -497,6 +500,4 @@ def RingCTTest(input_count = 2, mixin_count = 3, outputs = 2, rngSeed=0):
     rct = RingCT.Sign(rct_xk, rct_xk_v, rct_xk_bf, rct_mixin_tx, stealth_tx_out, stealth_tx_out_v, stealth_tx_out_bf)
     rct.Print_MEW()
 
-    print("================================")
-    print("RingCT Withdraw (MEW):")
     return rct

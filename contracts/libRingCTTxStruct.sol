@@ -1,4 +1,4 @@
-pragma solidity ^0.4.22;
+pragma solidity ^0.4.24;
 
 import "./libUTXO.sol";
 
@@ -17,8 +17,8 @@ library RingCTTxStruct {
 	function Deserialize(uint256[] argsSerialized)
 		internal pure returns (Data args)
 	{
-		//Check input length, need at least 8 arguments - assuming all arrays are zero length and only store the size
-		require(argsSerialized.length >= 6);
+		//Check input length, need at least 3 arguments - assuming all arrays are zero length and only store the size
+		require(argsSerialized.length >= 3);
 		
 		//Deserialize
 		uint256 i;
@@ -28,22 +28,22 @@ library RingCTTxStruct {
 		args.redeem_eth_value = argsSerialized[1];
 		
 		//Initialize Arrays
-		length = argsSerialized[2];
+		length = (argsSerialized[2] & 0xFFFFFFFFFFFFFFFF);
 		if (length > 0) args.input_tx = new UTXO.Input[](length);
 		
-		length = argsSerialized[3];
+		length = (argsSerialized[2] & (0xFFFFFFFFFFFFFFFF << 64)) >> 64;
 		if (length > 0) args.output_tx = new UTXO.Output[](length);
 		
-		length = argsSerialized[4];
+		length = (argsSerialized[2] & (0xFFFFFFFFFFFFFFFF << 128)) >> 128;
 		if (length > 0) args.I = new uint256[](length);
 		
-		length = argsSerialized[5];
+		length = (argsSerialized[2] & (0xFFFFFFFFFFFFFFFF << 192)) >> 192;
 		if (length > 0) args.signature = new uint256[](length);
 		
 		//Check input length again
 		//In the first case, all args are provided explicitly
-		length = 6 + args.input_tx.length*4 + args.output_tx.length*9 + args.I.length + args.signature.length;
-		index = 6;
+		length = 3 + args.input_tx.length*4 + args.output_tx.length*9 + args.I.length + args.signature.length;
+		index = 3;
 		if (argsSerialized.length >= length) {
 			//Assemble the rest of args
 			for (i = 0; i < args.input_tx.length; i++) {
@@ -93,17 +93,18 @@ library RingCTTxStruct {
 	function Serialize(Data args)
 		internal pure returns (uint256[] argsSerialized)
 	{
-		argsSerialized = new uint256[](6 + args.input_tx.length*4 + args.output_tx.length*9 + args.I.length + args.signature.length);
+		argsSerialized = new uint256[](3 + args.input_tx.length*4 + args.output_tx.length*9 + args.I.length + args.signature.length);
 		
 		argsSerialized[0] = uint256(args.redeem_eth_address);
 		argsSerialized[1] = args.redeem_eth_value;
-		argsSerialized[2] = args.input_tx.length;
-		argsSerialized[3] = args.output_tx.length;
-		argsSerialized[4] = args.I.length;
-		argsSerialized[5] = args.signature.length;
+		
+		argsSerialized[2] = (args.input_tx.length & 0xFFFFFFFFFFFFFFFF);
+		argsSerialized[2] |= (args.output_tx.length & 0xFFFFFFFFFFFFFFFF) << 64;
+		argsSerialized[2] |= (args.I.length & 0xFFFFFFFFFFFFFFFF) << 128;
+		argsSerialized[2] |= (args.signature.length & 0xFFFFFFFFFFFFFFFF) << 192;
 		
 		uint256 i;
-		uint256 index = 6;
+		uint256 index = 3;
 		for (i = 0; i < args.input_tx.length; i++) {
 			argsSerialized[index] = args.input_tx[i].pub_key[0];
 			argsSerialized[index+1] = args.input_tx[i].pub_key[1];
