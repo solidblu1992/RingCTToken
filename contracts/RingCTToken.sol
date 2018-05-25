@@ -103,7 +103,7 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
 	
 	//Verify Pedersen Commitment is positive using Bullet Proof(s)
 	//Arguments are serialized to minimize stack depth.  See libBulletproofStruct.sol
-	function VerifyPCBulletProof(uint256[] bpSerialized, uint256[] power10, uint256[] offsets)
+	function VerifyPCBulletProof(uint256[] bpSerialized, uint64[] power10, uint64[] offsets)
 		public requireECMath requireBulletproofVerify returns (bool success)
 	{
 	    //Deserialize Bullet Proof
