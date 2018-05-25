@@ -41,13 +41,13 @@ library BulletproofStruct {
 			args[proof].N = (argsSerialized[index] & 0xFFFFFFFFFFFFFFFF);
 		
 		    //Initialize V, L, and R arrays
-		    length = (argsSerialized[index] & (0xFFFFFFFFFFFFFFFF << 64));
+		    length = (argsSerialized[index] & (0xFFFFFFFFFFFFFFFF << 64)) >> 64;
 		    if (length > 0) args[proof].V = new uint256[](length);
 		    
-            length = (argsSerialized[index] & (0xFFFFFFFFFFFFFFFF << 128));
+            length = (argsSerialized[index] & (0xFFFFFFFFFFFFFFFF << 128)) >> 128;
     		if (length > 0) args[proof].L = new uint256[](length);
     		
-    		length = (argsSerialized[index] & (0xFFFFFFFFFFFFFFFF << 192));
+    		length = (argsSerialized[index] & (0xFFFFFFFFFFFFFFFF << 192)) >> 192;
     		if (length > 0) args[proof].R = new uint256[](length);
     		
     		//Check array length again
@@ -113,7 +113,7 @@ library BulletproofStruct {
 	    uint256 index = 1;
 		for (proof = 0; proof < args.length; proof++) {
 		    //Store V, L, and R sizes as well as N
-			argsSerialized[index] = args[proof].N;
+			argsSerialized[index] = (args[proof].N & 0xFFFFFFFFFFFFFFFF);
 		    argsSerialized[index] |= (args[proof].V.length & 0xFFFFFFFFFFFFFFFF) << 64;
 		    argsSerialized[index] |= (args[proof].L.length & 0xFFFFFFFFFFFFFFFF) << 128;
 		    argsSerialized[index] |= (args[proof].R.length & 0xFFFFFFFFFFFFFFFF) << 192;
