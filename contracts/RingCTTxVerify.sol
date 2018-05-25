@@ -1,4 +1,4 @@
-pragma solidity ^0.4.22;
+pragma solidity ^0.4.24;
 
 import "./Debuggable.sol";
 import "./ECMathInterface.sol";
@@ -6,6 +6,12 @@ import "./MLSAGVerifyInterface.sol";
 import "./libUTXO.sol";
 import "./libBorromeanRangeProofStruct.sol";
 import "./libRingCTTxStruct.sol";
+
+/*
+Deploy addresse(s):
+"0x4552c90DB760D5380921e18377A41eDCff8D100e",
+"0x3f667759450149ea7b3826f97EA2460CFEB413de"
+*/
 
 contract RingCTTxVerify is ECMathInterface, MLSAGVerifyInterface {
 	//Contstructor Function - Initializes Prerequisite Contract(s)
@@ -29,7 +35,7 @@ contract RingCTTxVerify is ECMathInterface, MLSAGVerifyInterface {
 		public view requireECMath requireMLSAGVerify returns (bool)
 	{
 		//Deserialize arguments
-		RingCTTxStruct.Data args = RingCTTxStruct.Deserialize(argsSerialized);
+		RingCTTxStruct.Data memory args = RingCTTxStruct.Deserialize(argsSerialized);
 	
 		//Need at least one destination
         if (args.output_tx.length == 0) return false;
@@ -109,7 +115,7 @@ contract RingCTTxVerify is ECMathInterface, MLSAGVerifyInterface {
         public view requireECMath requireMLSAGVerify returns (bool success)
     {
 		//Deserialize arguments
-		BorromeanRangeProofStruct.Data args = BorromeanRangeProofStruct.Deserialize(argsSerialized);
+		BorromeanRangeProofStruct.Data memory args = BorromeanRangeProofStruct.Deserialize(argsSerialized);
 	
         //Get number of bits to prove
         if (args.bit_commits.length % 2 != 0) return false;

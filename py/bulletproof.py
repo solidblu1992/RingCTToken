@@ -587,15 +587,15 @@ class BulletProof:
 
 #Single Bullet Proofs
 if (True):
-    N = 16  #bits
-    m = 2   #commitments per proof
+    N = 8  #bits
+    m = 4   #commitments per proof
     print()
     print("Generating Single Bullet Proof with " + str(m) + " commitment(s) of " + str(N) + " bits...")
 
     #Generate proof(s)
     import time
     t = time.time()
-    bp = BulletProof.Generate([0]*m, [0]*m, [0]*m, getRandom(m), N)
+    bp = BulletProof.Generate([4]*m, [0]*m, [0]*m, getRandom(m), N)
     t = time.time() - t
     bp.Print_MEW()
     

@@ -1,9 +1,16 @@
-pragma solidity ^0.4.22;
+pragma solidity ^0.4.24;
 
 import "./Debuggable.sol";
 import "./ECMathInterface.sol";
 import "./RingCTTxVerifyInterface.sol";
 import "./BulletproofVerifyInterface.sol";
+
+/*
+Deploy addresses:
+"0x4552c90DB760D5380921e18377A41eDCff8D100e",
+"0xB2980dDcac235Bfe66135bC9b990eC1b5ED5cCF5",
+"0xe126E4614aBC9d0DDc7162d857E33C032bda2271"
+*/
 
 contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVerifyInterface {
 	//Contstructor Function - Initializes Prerequisite Contract(s)
@@ -97,7 +104,7 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
 		    
 			//Calculate (10^power10)*V = (10^power10)*(v*H + bf*G1) = v*(10^power10)*H + bf*(10^power10)*G1
 			if (power10 != 0) {
-				args.total_commit = ecMath.Multiply(args.total_commit, 10**power10);
+				args.total_commit = ecMath.Multiply(args.total_commit, 10**uint256(power10));
 			}
 		
 			//Calculate V + offset*H = v*H + bf*G1 + offset*H = (v + offset)*H + bf*G1
@@ -109,7 +116,7 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
 			
 			uint256[3] memory temp;
 			temp[0] = (args.bit_commits.length / 2);    //Bits
-			temp[1] = (10**power10);                    //Resolution
+			temp[1] = (10**uint256(power10));           //Resolution
 			temp[2] = (4**temp[0]-1)*temp[1]+offset;    //Max Value
 			emit PCRangeProvenEvent(ecMath.CompressPoint(args.total_commit), offset, temp[2], temp[1]);
 		}
@@ -165,7 +172,7 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
 				    
     				//Calculate (10^power10)*V = (10^power10)*(v*H + bf*G1) = v*(10^power10)*H + bf*(10^power10)*G1
     				if (power10[offset_index] != 0) {
-    					point = ecMath.Multiply(point, 10**power10[offset_index]);
+    					point = ecMath.Multiply(point, 10**uint256(power10[offset_index]));
     				}
     			
     				//Calculate V + offset*H = v*H + bf*G1 + offset*H = (v + offset)*H + bf*G1
@@ -178,7 +185,7 @@ contract RingCTToken is RingCTTxVerifyInterface, ECMathInterface, BulletproofVer
     				balance_positive[point[0]] = true;
     				
     				//Emit event
-    				temp[0] = (10**power10[offset_index]);                     //Resolution
+    				temp[0] = (10**uint256(power10[offset_index]));                     //Resolution
     				temp[1] = (2**args[p].N-1)*temp[0]+offsets[offset_index];  //Max Value
     				emit PCRangeProvenEvent(point[0], offsets[offset_index], temp[1], temp[0]);
 					

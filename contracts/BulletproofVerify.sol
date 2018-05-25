@@ -1,8 +1,13 @@
-pragma solidity ^0.4.22;
+pragma solidity ^0.4.24;
 
 import "./Debuggable.sol";
 import "./ECMathInterface.sol";
 import "./libBulletproofStruct.sol";
+
+/*
+Deploy address(es):
+"0x4552c90DB760D5380921e18377A41eDCff8D100e"
+*/
 
 contract BulletproofVerify is ECMathInterface {
 	uint256 private NCurve; //Stored locally in order to minimize ECMath calls
@@ -69,7 +74,7 @@ contract BulletproofVerify is ECMathInterface {
 		public constant requireECMath returns (bool)
 	{
 		//Deserialize arguments
-		BulletproofStruct.Data[] bp = BulletproofStruct.Deserialize(argsSerialized);
+		BulletproofStruct.Data[] memory bp = BulletproofStruct.Deserialize(argsSerialized);
 		
 	    //Find longest proof
 	    Variables memory v;

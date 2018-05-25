@@ -1,4 +1,4 @@
-pragma solidity ^0.4.13;
+pragma solidity ^0.4.24;
 
 ////// lib/ds-math/src/math.sol
 /// math.sol -- mixin for inline numerical wizardry
