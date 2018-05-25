@@ -587,8 +587,8 @@ class BulletProof:
 
 #Single Bullet Proofs
 if (True):
-    N = 8   #bits
-    m = 4   #commitments per proof
+    N = 16  #bits
+    m = 2   #commitments per proof
     print()
     print("Generating Single Bullet Proof with " + str(m) + " commitment(s) of " + str(N) + " bits...")
 
@@ -598,7 +598,8 @@ if (True):
     bp = BulletProof.Generate([0]*m, [0]*m, [0]*m, getRandom(m), N)
     t = time.time() - t
     bp.Print_MEW()
-    print()
+    
+    print("\n")
     print("Generate time: " + str(t / m) + "s")
 
     #Verify proofs(s)
@@ -609,8 +610,8 @@ if (True):
 
 #Multiple Bullet Proofs
 if (False):
-    p = 2 #Number of Proofs
-    m = 2 #Commitments per Proof
+    p = 2   #Number of Proofs
+    m = 2   #Commitments per Proof
     bits = 8
     bp = [None]*p
 
@@ -624,7 +625,7 @@ if (False):
         bp[i] = BulletProof.Generate([5]*m, [17]*m, [0]*m, N=bits)
     t = time.time() - t
     BulletProof.PrintMultiMEW(bp)
-    print()
+    print("\n")
     print("Generation time: " + str(t) + "s (" + str(t / (p * m)) + "s per commitment)")
 
     #Verify proofs(s)

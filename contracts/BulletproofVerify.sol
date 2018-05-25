@@ -65,8 +65,12 @@ contract BulletproofVerify is ECMathInterface {
 	}
 	
 	//Verify Bulletproof(s), can do multiple commitements and multiple proofs at once
-	function VerifyBulletproof(BulletproofStruct.Data[] bp)
-	    internal constant requireECMath returns (bool) {
+	function VerifyBulletproof(uint256[] argsSerialized)
+		public constant requireECMath returns (bool)
+	{
+		//Deserialize arguments
+		BulletproofStruct.Data[] bp = BulletproofStruct.Deserialize(argsSerialized);
+		
 	    //Find longest proof
 	    Variables memory v;
 	    uint256 p;
@@ -268,11 +272,6 @@ contract BulletproofVerify is ECMathInterface {
 		else {
 		    return true;
 		}
-	}
-	
-	//Serialized version of VerifyBulletproof() for external calling
-	function VerifyBulletproof(uint256[] argsSerialized) public view returns (bool) {
-		return VerifyBulletproof(BulletproofStruct.Deserialize(argsSerialized));
 	}
 	
 	//Low level helper functions

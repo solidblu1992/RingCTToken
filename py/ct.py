@@ -130,9 +130,10 @@ class PCRangeProof:
         print("Borromean Range Proof MEW Representation - for use with VerifyBorromeanRangeProof():")
         print("argsSerialized:")
         print(point_to_str(commitment) + ",")
-        print(str(self.pow10) + ", " + str(self.offset) + ", ", end = "")
-        print(str(L) + ", ", end = "")
-        print(str(len(self.range_proof.signature)) + ",")
+
+        combined = L & 0xFFFFFFFFFFFFFFFF
+        combined |= (len(self.range_proof.signature) & 0xFFFFFFFFFFFFFFFF) << 64
+        print(bytes_to_str(combined) + ",")
 
         for i in range(0, L // 2):
             print(point_to_str(self.range_proof.pub_keys[i]) + ",")
@@ -143,7 +144,13 @@ class PCRangeProof:
                 
             print(hex(self.range_proof.signature[i]), end="")
 
+        print("\n")
+        print("power10:")
+        print(str(self.pow10))
+
         print()
+        print("offset:")
+        print(str(self.offset))
         
 class PCAESMessage:
     message = b""
