@@ -4,7 +4,7 @@ import sha3
 
 #alt_bn_128 curve parameters
 Ncurve = curve_order
-Pcurve = 0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47
+Pcurve = field_modulus
 ECSignMask = 0x8000000000000000000000000000000000000000000000000000000000000000
 NullPoint = (FQ(0), FQ(0), FQ(0))
 counters = [0]*32
